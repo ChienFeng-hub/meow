@@ -65,7 +65,23 @@ class Args:
     """the frequency of training policy (delayed)"""
     noise_clip: float = 0.5
     """noise clip parameter of the Target Policy Smoothing Regularization"""
+    description: str = ""
 
+def evaluate_(envs, actor, deterministic=True, device='cuda'):
+    with torch.no_grad():
+        num_envs = envs.unwrapped.num_envs
+        rewards = np.zeros((num_envs,))
+        dones = np.zeros((num_envs,)).astype(bool)
+        s, _ = envs.reset(seed=range(num_envs))
+        while not all(dones):
+            action = actor(torch.Tensor(s).to(device))
+            a = action.cpu().detach().numpy()
+            s_, r, terminated, truncated, _ = envs.step(a)
+            done = terminated | truncated
+            rewards += r * (1-dones)
+            dones |= done
+            s = s_
+    return rewards.mean()
 
 def make_env(env_id, seed, idx, capture_video, run_name):
     def thunk():
@@ -118,18 +134,24 @@ class Actor(nn.Module):
         return x * self.action_scale + self.action_bias
 
 
-if __name__ == "__main__":
+def train(args=None):
     import stable_baselines3 as sb3
 
     if sb3.__version__ < "2.0":
         raise ValueError(
             """Ongoing migration: run the following command to install the new dependencies:
-poetry run pip install "stable_baselines3==2.0.0a1"
-"""
+            poetry run pip install "stable_baselines3==2.0.0a1"
+            """
         )
-
-    args = tyro.cli(Args)
-    run_name = f"{args.env_id}__{args.exp_name}__{args.seed}__{int(time.time())}"
+    
+    if args is not None:
+        run_name = f"{args.env_id}__{args.exp_name}__{args.seed}__{int(time.time())}"
+        writer = SummaryWriter(args.description)
+    else:
+        args = tyro.cli(Args)
+        run_name = f"{args.env_id}__{args.exp_name}__{args.seed}__{int(time.time())}"
+        writer = SummaryWriter(f"runs/{run_name}")
+  
     if args.track:
         import wandb
 
@@ -142,7 +164,7 @@ poetry run pip install "stable_baselines3==2.0.0a1"
             monitor_gym=True,
             save_code=True,
         )
-    writer = SummaryWriter(f"runs/{run_name}")
+
     writer.add_text(
         "hyperparameters",
         "|param|value|\n|-|-|\n%s" % ("\n".join([f"|{key}|{value}|" for key, value in vars(args).items()])),
@@ -159,6 +181,7 @@ poetry run pip install "stable_baselines3==2.0.0a1"
     # env setup
     envs = gym.vector.SyncVectorEnv([make_env(args.env_id, args.seed, 0, args.capture_video, run_name)])
     assert isinstance(envs.single_action_space, gym.spaces.Box), "only continuous action space is supported"
+    test_envs = gym.make_vec(args.env_id, num_envs=10)
 
     actor = Actor(envs).to(device)
     qf1 = QNetwork(envs).to(device)
@@ -182,6 +205,7 @@ poetry run pip install "stable_baselines3==2.0.0a1"
     )
     start_time = time.time()
 
+    best_test_rewards = -np.inf
     # TRY NOT TO MODIFY: start the game
     obs, _ = envs.reset(seed=args.seed)
     for global_step in range(args.total_timesteps):
@@ -256,7 +280,7 @@ poetry run pip install "stable_baselines3==2.0.0a1"
                 for param, target_param in zip(qf2.parameters(), qf2_target.parameters()):
                     target_param.data.copy_(args.tau * param.data + (1 - args.tau) * target_param.data)
 
-            if global_step % 100 == 0:
+            if global_step % 1000 == 0:
                 writer.add_scalar("losses/qf1_values", qf1_a_values.mean().item(), global_step)
                 writer.add_scalar("losses/qf2_values", qf2_a_values.mean().item(), global_step)
                 writer.add_scalar("losses/qf1_loss", qf1_loss.item(), global_step)
@@ -265,6 +289,14 @@ poetry run pip install "stable_baselines3==2.0.0a1"
                 writer.add_scalar("losses/actor_loss", actor_loss.item(), global_step)
                 print("SPS:", int(global_step / (time.time() - start_time)))
                 writer.add_scalar("charts/SPS", int(global_step / (time.time() - start_time)), global_step)
+
+            if global_step % 10000 == 0:
+                test_rewards = evaluate_(test_envs, actor, deterministic=False, device=device)
+                writer.add_scalar("Test/return", test_rewards, global_step)
+                if test_rewards>best_test_rewards:
+                    best_test_rewards = test_rewards
+                    torch.save(actor, os.path.join(f"{args.description}", 'test_rewards.pt'))
+                    print(f"save agent to: {args.description} with best return {best_test_rewards} at step {global_step}")
 
     if args.save_model:
         model_path = f"runs/{run_name}/{args.exp_name}.cleanrl_model"
@@ -294,3 +326,6 @@ poetry run pip install "stable_baselines3==2.0.0a1"
 
     envs.close()
     writer.close()
+    
+if __name__ == '__main__':
+    train()

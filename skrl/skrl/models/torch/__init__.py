@@ -6,3 +6,4 @@ from skrl.models.torch.gaussian import GaussianMixin
 from skrl.models.torch.multicategorical import MultiCategoricalMixin
 from skrl.models.torch.multivariate_gaussian import MultivariateGaussianMixin
 from skrl.models.torch.tabular import TabularMixin
+from skrl.models.torch.flow import FlowMixin

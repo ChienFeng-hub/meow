@@ -1,0 +1,9 @@
+imgs/
+venv/
+ckpts*/
+wandb/
+tmp/
+*.pyc
+result*
+_result*
+*.pdf

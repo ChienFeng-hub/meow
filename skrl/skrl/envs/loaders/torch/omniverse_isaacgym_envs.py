@@ -48,7 +48,8 @@ def load_omniverse_isaacgym_env(task_name: str = "",
                                 omniisaacgymenvs_path: str = "",
                                 show_cfg: bool = True,
                                 multi_threaded: bool = False,
-                                timeout: int = 30) -> Union["VecEnvBase", "VecEnvMT"]:
+                                timeout: int = 30,
+                                parse_args: bool = True) -> Union["VecEnvBase", "VecEnvMT"]:
     """Load an Omniverse Isaac Gym environment (OIGE)
 
     Omniverse Isaac Gym benchmark environments: https://github.com/NVIDIA-Omniverse/OmniIsaacGymEnvs
@@ -94,9 +95,13 @@ def load_omniverse_isaacgym_env(task_name: str = "",
 
     import torch
 
+    if parse_args:
+        sys_argv = sys.argv
+    else:
+        sys_argv = []
     # check task from command line arguments
     defined = False
-    for arg in sys.argv:
+    for arg in sys_argv:
         if arg.startswith("task="):
             defined = True
             break
@@ -108,13 +113,13 @@ def load_omniverse_isaacgym_env(task_name: str = "",
     # get task name from function arguments
     else:
         if task_name:
-            sys.argv.append(f"task={task_name}")
+            sys_argv.append(f"task={task_name}")
         else:
             raise ValueError("No task name defined. Set task_name parameter or use task=<task_name> as command line argument")
 
     # check num_envs from command line arguments
     defined = False
-    for arg in sys.argv:
+    for arg in sys_argv:
         if arg.startswith("num_envs="):
             defined = True
             break
@@ -125,11 +130,11 @@ def load_omniverse_isaacgym_env(task_name: str = "",
                 .format(num_envs, arg.split("num_envs=")[1].split(" ")[0]))
     # get num_envs from function arguments
     elif num_envs is not None and num_envs > 0:
-        sys.argv.append(f"num_envs={num_envs}")
+        sys_argv.append(f"num_envs={num_envs}")
 
     # check headless from command line arguments
     defined = False
-    for arg in sys.argv:
+    for arg in sys_argv:
         if arg.startswith("headless="):
             defined = True
             break
@@ -140,10 +145,10 @@ def load_omniverse_isaacgym_env(task_name: str = "",
                 .format(headless, arg.split("headless=")[1].split(" ")[0]))
     # get headless from function arguments
     elif headless is not None:
-        sys.argv.append(f"headless={headless}")
+        sys_argv.append(f"headless={headless}")
 
     # others command line arguments
-    sys.argv += cli_args
+    sys_argv += cli_args
 
     # get omniisaacgymenvs path from omniisaacgymenvs package metadata
     if omniisaacgymenvs_path == "":
@@ -160,10 +165,14 @@ def load_omniverse_isaacgym_env(task_name: str = "",
 
     # get hydra config without use @hydra.main
     config_file = "config"
-    args = get_args_parser().parse_args()
+    if parse_args:
+        args = get_args_parser().parse_args()
+        args_overrides = args.overrides
+    else:
+        args_overrides = sys_argv
     search_path = create_automatic_config_search_path(config_file, None, config_path)
     hydra_object = Hydra.create_main_hydra2(task_name='load_omniisaacgymenv', config_search_path=search_path)
-    config = hydra_object.compose_config(config_file, args.overrides, run_mode=RunMode.RUN)
+    config = hydra_object.compose_config(config_file, args_overrides, run_mode=RunMode.RUN)
 
     del config.hydra
     cfg = _omegaconf_to_dict(config)
@@ -176,6 +185,9 @@ def load_omniverse_isaacgym_env(task_name: str = "",
 
     # internal classes
     class _OmniIsaacGymVecEnv(VecEnvBase):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs, enable_signal=False)
+
         def step(self, actions):
             actions = torch.clamp(actions, -self._task.clip_actions, self._task.clip_actions).to(self._task.device).clone()
             self._task.pre_physics_step(actions)

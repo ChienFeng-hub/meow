@@ -370,16 +370,16 @@ class SAC(Agent):
                 self.track_data("Loss / Policy loss", policy_loss.item())
                 self.track_data("Loss / Critic loss", critic_loss.item())
 
-                self.track_data("Q-network / Q1 (max)", torch.max(critic_1_values).item())
-                self.track_data("Q-network / Q1 (min)", torch.min(critic_1_values).item())
+                # self.track_data("Q-network / Q1 (max)", torch.max(critic_1_values).item())
+                # self.track_data("Q-network / Q1 (min)", torch.min(critic_1_values).item())
                 self.track_data("Q-network / Q1 (mean)", torch.mean(critic_1_values).item())
 
-                self.track_data("Q-network / Q2 (max)", torch.max(critic_2_values).item())
-                self.track_data("Q-network / Q2 (min)", torch.min(critic_2_values).item())
+                # self.track_data("Q-network / Q2 (max)", torch.max(critic_2_values).item())
+                # self.track_data("Q-network / Q2 (min)", torch.min(critic_2_values).item())
                 self.track_data("Q-network / Q2 (mean)", torch.mean(critic_2_values).item())
 
-                self.track_data("Target / Target (max)", torch.max(target_values).item())
-                self.track_data("Target / Target (min)", torch.min(target_values).item())
+                # self.track_data("Target / Target (max)", torch.max(target_values).item())
+                # self.track_data("Target / Target (min)", torch.min(target_values).item())
                 self.track_data("Target / Target (mean)", torch.mean(target_values).item())
 
                 if self._learn_entropy:

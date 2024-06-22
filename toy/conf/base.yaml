@@ -1,0 +1,38 @@
+defaults:
+  - _self_
+  - config: base
+  - override hydra/hydra_logging: disabled  
+  - override hydra/job_logging: disabled
+
+hydra:  
+  output_subdir: null  
+  run:  
+    dir: .
+
+# Basic setups
+env: MultiGoal-v0
+algo: meow
+seed: 0
+description: base
+deterministic: !!bool True
+
+# Hyper-parameters
+buffer_size: 1000000
+eval_every: 800
+plot_every: 800
+steps: 4000
+warmup_steps: 1000
+batch_size: 256
+test_num: 10
+device: cuda
+# ----
+lr: !!float 1e-3
+grad_clip: 30
+weight_decay: 0
+# ----
+gamma: !!float 0.9
+tau: !!float 0.0005
+alpha: !!float 2.5
+sigma_max: !!float 1.0
+sigma_min: !!float -2.0
+path_load: ckpts/MultiGoal-v0/meow/base/1-seed0/best.pt
