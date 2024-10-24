@@ -48,22 +48,22 @@ if __name__ == '__main__':
         if env == "HalfCheetah-v4":
             steps = 1500000
             yticks = np.arange(-1500, 13500+2500, 2500)
-            xticks = np.arange(0, steps+1, 250000)
+            xticks = np.arange(0, steps, 250000)
         elif env == "Ant-v4":
             steps = 4000000
             yticks = np.arange(0, 7500+1500, 1500)
-            xticks = np.arange(0, steps+1, 1000000)
+            xticks = np.arange(0, steps, 1000000)
         elif env == "Hopper-v4":
             steps = 1500000
             yticks = np.arange(0, 3500+500, 500)
-            xticks = np.arange(0, steps+1, 250000)
+            xticks = np.arange(0, steps, 250000)
         elif env == "Walker2d-v4":
             steps = 4000000
             yticks = np.arange(0, 6000+1000, 1000)
-            xticks = np.arange(0, steps+1, 1000000)
+            xticks = np.arange(0, steps, 1000000)
         elif env == "Humanoid-v4":
             steps = 5000000
             yticks = np.arange(0, 7000+1000, 1000)
-            xticks = np.arange(0, steps+1, 1000000)
+            xticks = np.arange(0, steps, 1000000)
         palette = ['xkcd:deep sky blue', 'xkcd:orange']
         main(env, steps, yticks, xticks, palette=palette)

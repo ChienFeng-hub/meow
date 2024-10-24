@@ -8,7 +8,7 @@ import numpy as np
 
 def plot(env="Hopper-v4", steps=1000000, yticks=None, xticks=None, palette=None):
     print("plotting...")
-    os.makedirs('fig_A3', exist_ok = True)
+    os.makedirs('fig_7', exist_ok = True)
     log_dir = os.path.join("smoothed", env)
     df = SummaryReader(log_dir, pivot=True, extra_columns={'dir_name'}).scalars
     
@@ -36,7 +36,7 @@ def plot(env="Hopper-v4", steps=1000000, yticks=None, xticks=None, palette=None)
     
     plt.xlabel('')
     plt.ylabel('')
-    plt.savefig('fig_A6/'+env+'.png')
+    plt.savefig('fig_7/'+env+'.png')
     plt.close(fig)
     print("Finish plotting.")
 
@@ -44,7 +44,7 @@ def main(env, steps, yticks, xticks, palette=None):
     plot(env=env, steps=steps, yticks=yticks, xticks=xticks, palette=palette)
 
 if __name__ == '__main__':
-    for env in ["HalfCheetah-v4", "Ant-v4", "Hopper-v4", "Humanoid-v4", "Walker2d-v4"]: 
+    for env in ["HalfCheetah-v4", "Ant-v4", "Hopper-v4", "Humanoid-v4", "Walker2d-v4"]:
         if env == "HalfCheetah-v4":
             steps = 1500000
             yticks = np.arange(-1500, 13500+2500, 2500)
@@ -65,6 +65,5 @@ if __name__ == '__main__':
             steps = 5000000
             yticks = np.arange(0, 7000+1000, 1000)
             xticks = np.arange(0, steps+1, 1000000)
-
         palette = ['xkcd:deep sky blue', 'xkcd:orange']
         main(env, steps, yticks, xticks, palette=palette)

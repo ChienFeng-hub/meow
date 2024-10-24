@@ -8,7 +8,7 @@ import numpy as np
 
 def plot(env="Hopper-v4", steps=1000000, yticks=None, xticks=None, palette=None):
     print("plotting...")
-    os.makedirs('fig_A5', exist_ok = True)
+    os.makedirs('fig_A4', exist_ok = True)
     log_dir = os.path.join("smoothed", env)
     df = SummaryReader(log_dir, pivot=True, extra_columns={'dir_name'}).scalars
     
@@ -36,7 +36,7 @@ def plot(env="Hopper-v4", steps=1000000, yticks=None, xticks=None, palette=None)
     
     plt.xlabel('')
     plt.ylabel('')
-    plt.savefig('fig_A5/'+env+'.png')
+    plt.savefig('fig_A4/'+env+'.png')
     plt.close(fig)
     print("Finish plotting.")
 
