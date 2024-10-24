@@ -1,0 +1,603 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="google-site-verification" content="j9HTkRmcgC7YMr2kNlRSikoFh3-uMfjxyV1QIDjywOM" />
+  <meta charset="utf-8">
+  <meta name="description"
+        content="Maximum Entropy Reinforcement Learning via Energy-Based Normalizing Flow">
+  <meta name="keywords" content="Maximum Entropy RL, Energy-Based Normalizing Flow, Soft Actor-Critic">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Maximum Entropy Reinforcement Learning via Energy-Based Normalizing Flow</title>
+
+  <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro"
+        rel="stylesheet">
+
+  <link rel="stylesheet" href="./static/css/bulma.min.css">
+  <link rel="stylesheet" href="./static/css/bulma-carousel.min.css">
+  <link rel="stylesheet" href="./static/css/bulma-slider.min.css">
+  <link rel="stylesheet" href="./static/css/fontawesome.all.min.css">
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+  <link rel="stylesheet" href="./static/css/index.css">
+  <link rel="icon" href="./static/images/meow.png" type="image/x-icon">
+  <link rel="stylesheet" href="./static/css/custumize.css">
+  <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script defer src="./static/js/fontawesome.all.min.js"></script>
+  <script src="./static/js/bulma-carousel.min.js"></script>
+  <script src="./static/js/bulma-slider.min.js"></script>
+  <script src="./static/js/index.js"></script>
+  <script>
+    MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$','$$'], ['\\[', '\\]']],
+        processEscapes: true,
+        processEnvironments: true,
+        tags: 'ams',
+      },
+      options: {
+        skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+      }
+    };
+  
+    window.addEventListener('load', (event) => {
+        document.querySelectorAll("mjx-container").forEach(function(x){
+          x.parentElement.classList += 'has-jax'})
+      });
+  
+  </script>
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script type="text/javascript" id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+  </script>
+  \(
+    \newcommand{\E}{\mathbb{E}}
+    \newcommand{\R}{\mathbb{R}}
+    \newcommand{\Rd}{\mathbb{R}^D}
+
+    \def\vs{{\mathbf{s}}}
+    \def\va{{\mathbf{a}}}
+    \def\vz{{\mathbf{z}}}
+    \def\vx{{\mathbf{x}}}
+    \def\vg{{\mathbf{g}}}
+    \def\vmu{{\mathbf{\mu}}}
+
+    \def\sS{{\mathcal{S}}}
+    \def\sA{{\mathcal{A}}}
+    \def\pzero{{p_0}}
+    \def\discount{{\gamma}}
+    \def\policy{{\pi}}
+    \def\prior{p_\vz}
+    \def\jacob{\mathbf{J}}
+    \def\mA{\mathbf{A}}
+    \def\argmax{\mathrm{argmax}}
+    \def\smooth{\tau}
+
+    \def\H{\mathcal{H}}
+    \def\T{\mathcal{T}}
+    \def\D{\mathcal{D}}
+    \def\L{\mathcal{L}}
+    \def\F{\mathcal{F}}
+    \def\Sn{\mathcal{S}_n}
+    \def\Sl{\mathcal{S}_l}
+    \def\DKL{\mathbb{D}_{\text{KL}}}
+
+    \newcommand{\abs}[1]{\left| #1 \right|}
+    \newcommand{\norm}[1]{\left\| #1 \right\|}
+    \newcommand{\of}[1]{\left( #1 \right)}
+    \newcommand{\ofmid}[1]{\left[ #1 \right]}
+    \newcommand{\dd}[2]{\frac{\partial}{\partial #1} #2}
+  \)
+  
+  <style>
+    mark.red {
+      color:#ff0000;
+      background: none;
+    }
+
+    mark.blue {
+      color: blue;
+      background: none;
+    }
+
+    a:link {
+      color: blue;
+      background-color: transparent;
+      text-decoration: none;
+    }
+
+    /* a:visited {
+      color: #551A8B;
+      background-color: transparent;
+      text-decoration: none;
+    } */
+
+    a:hover {
+      color: red;
+      background-color: transparent;
+      text-decoration: none;
+    }
+  </style>
+
+</head>
+
+<body>
+
+<nav class="navbar" role="navigation" aria-label="main navigation">
+  <div class="navbar-brand">
+    <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false">
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+    </a>
+  </div>
+</nav>
+
+
+<section class="hero">
+  <div class="hero-body">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered">
+        <div class="column has-text-centered">
+          <h1 class="title is-1 publication-title">Maximum Entropy Reinforcement Learning via Energy-Based Normalizing Flow</h1>
+          <div class="is-size-5 publication-authors">
+            <span class="author-block">
+              <a href="https://chen-hao-chao.github.io/">Chen-Hao Chao</a><sup>*1,2</sup>,</span>
+            <span class="author-block">
+              <a href="https://www.linkedin.com/in/chien-feng-528393293/">Chien Feng</a><sup>*1</sup>,</span>
+            <span class="author-block">
+              <a href="https://j3soon.github.io/">Wei-Fang Sun</a><sup>2</sup>,</span>
+            <span class="author-block">
+              <a href="https://www.linkedin.com/in/cheng-kuang-ck-lee-b97258157/?originalSubdomain=tw">Cheng-Kuang Lee</a><sup>2</sup>,
+            </span>
+            <span class="author-block">
+              <a href="https://scholar.google.com/citations?user=ebIHTEoAAAAJ&hl=en">Simon See</a><sup>2</sup>,
+            </span>
+            <span class="author-block">
+              <a href="https://elsalab.ai/about">Chun-Yi Lee</a><sup>1</sup>,
+            </span>
+          </div>
+
+          <div class="is-size-5 publication-authors">
+            <span class="author-block"><sup>1</sup> National Tsing Hua University,</span>
+            <span class="author-block"><sup>2</sup> NVIDIA AI Technology Center</span></br>
+            <span class="author-block"><sup></sup> (* equal contribution)</span></br>
+          </div>
+
+          <div class="column has-text-centered">
+            <div class="publication-links">
+              <!-- PDF Link. -->
+              <span class="link-block">
+                <a href="https://arxiv.org/abs/2405.13629"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <i class="ai ai-arxiv"></i>
+                  </span>
+                  <span>arXiv</span>
+                </a>
+              </span>
+              <!-- Video Link. -->
+              <span class="link-block">
+                <a href=""
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <i class="fab fa-youtube"></i>
+                  </span>
+                  <span>Video</span>
+                </a>
+              </span>
+              <!-- Code Link. -->
+              <span class="link-block">
+                <a href="https://github.com/ChienFeng-hub/meow"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <i class="fab fa-github"></i>
+                  </span>
+                  <span>Code</span>
+                  </a>
+              </span>
+            </div>
+          </div>
+
+          <div class="column has-text-centered">
+            &#9654 <b>Keywords: </b>
+            <!-- <div class="w3-tag w3-round w3-blue" style="padding:3px"> -->
+              <div class="w3-tag w3-round w3-blue w3-border w3-border-white">
+                Maximum Entropy RL
+              </div>
+            <!-- </div> -->
+            <!-- <div class="w3-tag w3-round w3-blue" style="padding:3px"> -->
+              <div class="w3-tag w3-round w3-blue w3-border w3-border-white">
+                Energy-Based Normalizing Flow
+              </div>
+            <!-- </div> -->
+            <!-- <div class="w3-tag w3-round w3-blue" style="padding:3px"> -->
+              <div class="w3-tag w3-round w3-blue w3-border w3-border-white">
+                Soft Actor-Critic
+              </div></br>
+            <!-- </div> -->
+            <div class="w3-bar w3-border w3-light-grey" style="height:10px; visibility:hidden;"></div>
+            &#9654 <b>Venue: </b>
+            <div class="w3-tag w3-round w3-dark-grey w3-border w3-border-white">
+              Conference on Neural Information Processing Systems (NeurIPS 2024)
+            </div>
+          </div></br>
+
+          <div class="w3-bar w3-border w3-light-grey"></div>
+        
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container is-max-desktop">
+    <!-- Abstract. -->
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">Abstract</h2>
+        <div class="content has-text-justified scroll-wrapper">
+          Existing Maximum-Entropy (MaxEnt) Reinforcement Learning (RL) methods
+          for continuous action spaces are typically formulated based on actor-critic frameworks and optimized through alternating steps of policy evaluation and policy
+          improvement. In the policy evaluation steps, the critic is updated to capture the
+          soft Q-function. In the policy improvement steps, the actor is adjusted in accordance with the updated soft Q-function. In this paper, we introduce a new MaxEnt
+          RL framework modeled using Energy-Based Normalizing Flows (EBFlow). This
+          framework integrates the policy evaluation steps and the policy improvement steps,
+          resulting in a single objective training process. Our method enables the calculation of the soft value function used in the policy evaluation target without Monte
+          Carlo approximation. Moreover, this design supports the modeling of multi-modal
+          action distributions while facilitating efficient action sampling. To evaluate the
+          performance of our method, we conducted experiments on the MuJoCo benchmark
+          suite and a number of high-dimensional robotic tasks simulated by Omniverse
+          Isaac Gym. The evaluation results demonstrate that our method achieves superior
+          performance compared to widely-adopted representative baselines.
+        </div>
+      </div>
+    </div>
+    <!--/ Abstract. -->
+
+    <!-- Paper video. -->
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">Video</h2>
+        <div class="publication-video">
+          <iframe width="560" height="315" src="https://www.youtube.com/embed/71-VtIWEPFw" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+        </div>
+      </div>
+    </div></br>
+    <!--/ Paper video. -->
+    <div class="w3-bar w3-border w3-light-grey"></div>
+  </div>
+</section>
+
+
+<section class="section">
+  <div class="container is-max-desktop">
+    <h2 class="title" style="text-indent: -0.35em;">Overview</h2>
+    <div class="columns is-centered has-text-centered">
+      <div class="content has-text-justified scroll-wrapper">
+        <!-- <p>
+          <li>Existing Maximum-Entropy (MaxEnt) RL methods for continuous action spaces typically require <mark class="red">two optimization steps</mark>, which can potentially introduce additional optimization errors.</li>
+          <li>Moreover, these methods use <mark class="red">Monte-Carlo estimation</mark> to calculate the soft value function, which can be susceptible to estimation errors and variances when there are too few samples.</li>
+          <li>In this work, we propose a unified framework that combines MaxEnt RL with Energy-based Normalizing Flow. This integration results in a <mark class="red">single objective training process</mark> and enables <mark class="red">exact calculation of the soft value</mark>.</li>
+        </p> -->
+        <p>This blog post offers an introduction to our proposed <b>MEow</b> algorithm.
+          <!-- The contents are essentially the same as our paper, but some sections have been removed or rephrased for better readability. -->
+          We begin with an review of MaxEnt RL and EBFlow.
+          Then, we explore the connections between these models by introducing MEow. 
+          Finally, we present experimental results to demonstrate the effectiveness of the proposed method. 
+          If you have any questions, please feel free to email <a href="https://chen-hao-chao.github.io/">Chen-Hao Chao</a>. If you find this information useful, please consider sharing it with your friends.</p>
+      </div>
+    </div>
+</section>
+
+<section class="section">
+  <div class="container is-max-desktop">
+    <h2 class="title" style="text-indent: -0.35em;">Background</h2>
+    <div class="columns is-centered has-text-centered">
+      <div class="content has-text-justified scroll-wrapper">
+        <p>&#9654<b>Maximum Entropy Reinforcement Learning (MaxEnt RL)</b> augments standard RL objective with <mark class="blue">entropy rewards</mark>:</p>
+        <p class="has-text-centered">
+          $$\begin{equation}
+          \label{eq:reward_objective}
+          \policy_{\mathrm{MaxEnt}}^{*} =  \underset{\policy}{\argmax}\, \sum_{t} \E_{(\vs_t, \va_t)\sim \rho_{\policy}}\ofmid{ r_t+\textcolor{blue}{\alpha \H(\policy(\cdot|\vs_t)) }}.
+          \end{equation}$$
+        </p>
+        <p>And according to previous works [<a href="#SQL">1</a>, <a href="#SAC">2</a>], the optiaml policy for Eq.$(\ref{eq:reward_objective})$ is given by:</p>
+        <p class="has-text-centered">
+          \begin{equation}
+          \label{eq:optimal_policy}
+          \policy^{*}_{\mathrm{MaxEnt}}(\va_t|\vs_t) = \exp \of{ \frac{1}{\alpha}(Q^{*}_{\mathrm{soft}}(\vs_t, \va_t) - V^{*}_{\mathrm{soft}}(\vs_t)) },
+          \end{equation}
+        </p>
+        <p>where</p>
+        <p class="has-text-centered">
+          \begin{equation}
+          \label{eq:soft_value}
+          Q^{*}_{\mathrm{soft}}(\vs_t, \va_t) = r_t + \gamma \E_{\vs_{t+1} \sim p_T} \ofmid{ V^{*}_{\mathrm{soft}}(\vs_{t+1})},\,\,\,\,\,
+          V^{*}_{\mathrm{soft}}(\vs_t) = \alpha \log \int \exp \of{\frac{1}{\alpha}Q^{*}_{\mathrm{soft}}(\vs_t, \va)} d\va.
+          \end{equation}
+        </p>
+        <p>
+          In practice, a policy can be modeled as $\policy_\theta(\va_t|\vs_t)=\exp(\frac{1}{\alpha}(Q_\theta (\vs_t, \va_t)-V_\theta(\vs_t)))$ with parameter $\theta$, 
+          where the soft Q-function and the soft value function are expressed as $Q_\theta(\vs_t, \va_t)$ and $V_\theta(\vs_t) = \alpha \log \int \exp \of{\frac{1}{\alpha}Q_\theta(\vs_t, \va_t)} d\va_t$, respectively. 
+          Given an experience reply buffer $\D$ that stores transition tuples $(\vs_t, \va_t, r_t, \vs_{t+1})$, 
+          the training objective of $Q_\theta$ (which can then be used to derive $V_\theta$ and $\policy_\theta$) can be written as the following equation according to the soft Bellman errors:
+        </p>
+        <p class="has-text-centered">
+          \begin{equation}
+          \label{eq:sql_loss}
+          \L(\theta) = \E_{(\vs_t, \va_t, r_t, \vs_{t+1})\sim \D} \left[\frac{1}{2} \left(Q_\theta (\vs_{t}, \va_t) - (r_t + \discount V_\theta (\vs_{t+1})) \right)^2 \right].
+          \end{equation}
+        </p>
+        <p>
+          Nonetheless, directly using this objective presents two challenges:
+          <ol>
+            <li>The calculation of  $V_\theta(\vs_t)$ involves a computationally infeasible integral operation.</li>
+            <li>Sampling actions from the policy (energy-based model) requires costly iterative process.</li>
+          </ol>
+        </p>
+        <p>&#9654<b>Energy-based Normalizing Flows (EBFlow) [<a href="#EBFlow" style="color: blue;">3</a>]</b> were recently introduced to reinterpret flow-based models as energy-based models.
+        Specifically, a normalizing flow with $L$ layers of transformations can be divided into non-linear $S_n$ and linear $S_l$ parts, which correspond to the unnormalized density and normalizing constant in an energy-based model,
+        as illustrated in the following equation:</p>
+        <p class="has-text-centered">
+          \begin{equation}
+          \label{eq:ebflow}
+          \begin{aligned}
+            p_\theta (\vx) &= \prior \of{g_\theta(\vx)} \prod_{i=1}^{L} \abs{\det \of{\jacob_{g_\theta^i}(\vx^{i-1})}}\\
+            &= \underbrace{\prior \of{g_\theta(\vx)}\prod_{i\in \Sn}\abs{\det \of{\jacob_{g^i_\theta}(\vx^{i-1})}}}_{\text{Unnormalized Density}} \underbrace{\prod_{i\in \Sl}\abs{\det \of{\jacob_{g^i_\theta}}}}_{\text{Const.}}\\
+            &\triangleq \underbrace{\exp \of{-E_\theta(\vx)}}_{\text{Unnormalized Density}} \underbrace{Z^{-1}_\theta.}_{\ \text{Const.}}\\
+          \end{aligned}
+          \end{equation}
+        </p>
+        <p>In EBFlow, the energy function $E_\theta(\vx)$ is defined as $-\log (\prior \of{g_\theta(\vx)}\prod_{i\in \Sn}|\det (\jacob_{g^i_\theta}(\vx^{i-1}))|)$ and the normalizing constant $Z_\theta=\int \exp(-E_\theta(\vx)) d\vx=\prod_{i\in \Sl}|\det \jacob_{g^i_\theta}|^{-1}$ is independent of $\vx$. The input-independence of $Z_\theta$ holds since $g^i_\theta$ is either a first-degree or zero-degree polynomial for any $i\in\Sl$, and thus its Jacobian is a constant to $\vx^{i-1}$. This technique was originally proposed to reduce the training cost of maximum likelihood estimation for normalizing flows. However, we discovered that EBFlow is ideal for MaxEnt RL. Its unique capability to represent a parametric energy function with an associated sampler $g^{-1}_\theta$, and to calculate a normalizing constant $Z_\theta$ without integration are able to address the challenges mentioned above. We discuss our insights in the next section.</p>
+      </div>
+    </div>
+</section>
+
+<section class="section">
+  <div class="container is-max-desktop">
+    <h2 class="title" style="text-indent: -0.35em;">Methodology</h2>
+    <div class="columns is-centered has-text-centered">
+      <div class="content has-text-justified scroll-wrapper">
+        <p>We propose a new framework for modeling <b>M</b>ax<b>E</b>nt RL using EBFl<b>ow</b>, which we call <b>MEow</b>. 
+          The key idea behind MEow is that the policy can be viewed as an state-conditioned EBFlow:</p>
+        <p>$$
+          \begin{equation}
+          \label{eq:meow}
+          \begin{aligned}
+          \policy_\theta(\va_t|\vs_t)
+          &= \underbrace{\prior \of{g_\theta(\va_t|\vs_t)}\prod_{i \in \Sn}\abs{\det \of{\jacob_{g^i_\theta}(\va_t^{i-1}|\vs_t)}}}_{\text{Unnormalized Density}} \underbrace{\prod_{i\in \Sl}\abs{\det (\jacob_{g^i_\theta}(\vs_t))}}_{\text{Norm. Const.}} \\
+          &\triangleq \underbrace{\exp \of{\frac{1}{\alpha} Q_\theta(\vs_t, \va_t)}}_{\text{Unnormalized Density}} \underbrace{\exp \of{-\frac{1}{\alpha} V_\theta(\vs_t)}}_{\ \text{Norm. Const.}},\\
+          \end{aligned}
+          \end{equation}
+        $$</p>
+        <p>where the soft Q-function and the soft value function are selected as follows:</p>
+        <p>$$
+          \begin{equation}
+          \label{eq:Q_value_function}
+          \begin{aligned}
+          Q_\theta(\vs_t, \va_t) &\triangleq \alpha \log \prior \of{g_\theta(\va_t|\vs_t)}\prod_{i \in \Sn}\abs{\det \of{\jacob_{g^i_\theta}(\va_t^{i-1}|\vs_t)}},\\ 
+          V_\theta(\vs_t) &\triangleq  -\alpha \log \prod_{i\in \Sl}\abs{\det (\jacob_{g^i_\theta}(\vs_t))}.
+          \end{aligned}
+          \end{equation}
+        $$</p>
+        <p>Such a selection satisfies $V_\theta(\vs_{t}) = \alpha \log \int \exp (Q_\theta(\vs_t, \va)/ \alpha) d\va$ based on the property of EBFlow. In addition, both $Q_\theta$ and $V_\theta$ have a common output codomain $\R$, which enables them to learn to output arbitrary real values. For a detailed proof, please refer to our <a href="https://arxiv.org/pdf/2405.13629">paper</a>.</p>
+        <p>&#9654<b>Training:</b> With $Q_\theta$ and $V_\theta$ defined in Eq. (<a style="color: blue;">\ref{eq:Q_value_function}</a>), the loss $\L(\theta)$ in Eq. (<a style="color: blue;">\ref{eq:sql_loss}</a>) can be calculated without using Monte Carlo approximation of the soft value function target. 
+          Compared to the previous MaxEnt RL frameworks that rely on Monte Carlo estimation [<a href="#SQL">1</a>, <a href="#SAC">2</a>], our framework offers the advantage of avoiding the errors induced by the approximation. 
+          In addition, MEow employs a unified policy rather than two separate roles (i.e., the actor and the critic), which eliminates the need for minimizing an additional policy improvement loss $\L(\phi)$ to bridge the gap between $\policy_\theta$ and $\policy_\phi$. 
+          This simplifies the training process of MaxEnt RL, and obviates the requirement of balancing between the two optimization loops.
+        </p>
+        <p>&#9654<b>Inference:</b> The sampling process of $\policy_\theta$ can be efficiently performed by deriving the inverse of $g_\theta$, as supported by several normalizing flow architectures. 
+          In addition, unlike previous actor-critic frameworks susceptible to discrepancies between $\policy_\theta$ and $\policy_\phi$, the distribution established via $g^{-1}_\theta(\vz|\vs_t)$, where $\vz \sim \prior$, is consistently aligned with the pdf defined by $Q_\theta$. 
+          As a result, the actions taken by MEow can precisely reflect the learned soft Q-function.
+        </p>
+        <div class="columns is-mobile is-centered">
+          <div class="column is-half">
+            <p>&#9654<b>The Learnable Reward Shifting (LRS) Technique:</b> Although $Q_\theta$ and $V_\theta$ defined in Eq. (<a style="color: blue;">\ref{eq:Q_value_function}</a>) can theoretically learn arbitrary real values, in practice, they may encounter numerical instability during training due to the extensive growth of $\prod_{i \in \Sn}|\det (\jacob_{g^i_\theta}(\va_t^{i-1}|\vs_t))|$ and the extensive decay of $\prod_{i \in \Sl}|\det (\jacob_{g^i_\theta}(\vs_t))|$. 
+              This trend is demonstrated in the orange curves in <a href="#Fig1" style="color: blue;">Fig. 1</a>.
+            </p>
+            <p>To assist $\policy_\theta$ in predicting the soft Q and value functions, we propose adopting a shifting function $b_\theta: \sS \to \R$, which can be modeled using any neural network, and re-expressing the soft Q-function as $Q^b_\theta$ as follows:
+              <p class="has-text-centered">
+                \begin{equation}
+                \label{eq:Q_value_scale}
+                Q^b_\theta (\vs_t, \va_t) = Q_\theta (\vs_t, \va_t) + b_\theta(\vs_t).
+                \end{equation}
+              </p>
+            </p>
+          </div>
+          <div class="column is-half">
+            <p id="Fig1" class="has-text-centered" style="font-style: italic;"><img src="./static/images/mujoco_det.png" style="width:400pt;"></br>
+              <b>Figure 1.</b> The Jacobian determinant products for (a) the non-linear and (b) the linear transformations, evaluated during training in the Hopper-v4 environment.
+            </p>    
+          </div>
+        </div>
+        <p>The corresponding soft value function becomes $V_\theta^b(\vs_t)\triangleq\alpha \log \int \exp(Q^b_\theta(\vs_t, \va)/\alpha) d\va=V_\theta(\vs_t)+b_\theta(\vs_t)$, which can be calculated without Monte Carlo estimation. 
+          Under the redefined $Q^b_\theta$ and $V^b_\theta$, the original $Q_\theta$ and $V_\theta$ become the residuals of $b_\theta$. 
+          This helps reducing the magnitude of the Jacobian determinant products, as evidenced in the blue lines in <a href="#Fig1">Fig. 1</a>. 
+          Moreover, with the incorporation of $b_\theta$, the policy $\policy_\theta$ remains invariant since:</p> 
+          <p class="has-text-centered">
+            \begin{equation}
+            \exp(\frac{1}{\alpha}(Q^b_\theta(\vs_t, \va_t) - V_\theta^b(\vs_t))) = \exp(\frac{1}{\alpha}((Q_\theta(\vs_t, \va_t) + b_\theta(\vs_t))- (V_\theta(\vs_t)+b_\theta(\vs_t)) )) = \exp(\frac{1}{\alpha}(Q_\theta(\vs_t, \va_t) - V_\theta(\vs_t))),
+            \end{equation}
+          </p> 
+          <p>which allows the use of $g^{-1}_\theta$ for efficiently sampling actions. 
+          As a result, the aformentioned training and inference processes remain unchanged by using $Q^b_\theta$ and $V^b_\theta$ as the regressors.</p>
+        <p>&#9654<b>The Shifting-Based Clipped Double Q-Learning (SCDQ) Technique:</b> As observed in [<a href="#DoubleQ">4</a>], the overestimation of value functions often occurs in training. 
+          To address this issue, the authors in [<a href="#DoubleQ">4</a>] propose clipped double Q-learning, which employs two separate Q-functions and uses the one with the smaller output to estimate the value function during training. 
+          Inspired by this and our proposed learnable reward shifting, we further propose a shifting-based method that adopts two learnable reward shifting functions, $b^{(1)}_{\theta}$ and $b^{(2)}_{\theta}$, without duplicating the soft Q-function $Q_\theta$ and soft value function $V_\theta$ defined by $g_\theta$. 
+          The soft Q-functions $Q^{(1)}_{\theta}$ and $Q^{(2)}_{\theta}$ with corresponding learnable reward shifting functions $b^{(1)}_{\theta}$ and $b^{(2)}_{\theta}$ can be obtained using Eq. (\ref{eq:Q_value_scale}), while the soft value function $V_\theta^{\text{clip}}$ is written as the following formula:</p>
+        <p>
+          \begin{equation}
+          \label{eq:double_V}
+          V^{\text{clip}}_{\theta} (\vs_t) = \min \of{V_\theta (\vs_t) + b_\theta^{(1)}(\vs_t), V_\theta (\vs_t) + b_\theta^{(2)}(\vs_t) }= V_\theta (\vs_t) + \min \of{b_\theta^{(1)}(\vs_t), b_\theta^{(2)}(\vs_t)}.
+          \end{equation}
+        </p>
+        <p>This design also prevents the production of two policies in MEow, as having two policies can complicate the inference procedure. 
+          In the next section, we demonstrate that this technique can effectively improve the training process of MEow.</p>
+        <p>&#9654<b>Algorithm Summary:</b>
+          <p class="has-text-centered" style="font-style: italic;"><img src="./static/images/algo.png" style="width:80%"></p>
+        </p>
+      </div>
+    </div>
+</section>
+
+<section class="section">
+  <div class="container is-max-desktop">
+    <h2 class="title" style="text-indent: -0.35em;">Experiments</h2>
+    <div class="columns is-centered has-text-centered">
+      <div class="content has-text-justified scroll-wrapper">
+
+        <div class="columns is-mobile is-centered">
+          <div class="column is-three-quarter">
+            <p>&#9654<b>Two-dimensional Multi-goal Environment:</b> In this subsection, we present an example of MEow trained in a two-dimensional multi-goal environment <a href="#SQL">[1]</a>. 
+              The environment involves four goals, indicated by the red dots in <a href="#Fig2" style="color: blue;">Fig. 2</a>. 
+              The reward function is defined by the negative Euclidean distance from each state to the nearest goal, and the corresponding reward landscape is depicted using contours in <a href="#Fig2" style="color: blue;">Fig. 2</a>. 
+              The gradient map in <a href="#Fig2" style="color: blue;">Fig. 2</a> represents the soft value function predicted by our model. 
+              The blue lines extending from the center represent the trajectories produced using our policy.
+            </p>
+            <p>
+              As illustrated in <a href="#Fig2" style="color: blue;">Fig. 2</a>, our model's soft value function predicts higher values around the goals, suggesting successful learning of the goal positions through rewards. 
+              In addition, the trajectories demonstrate our agent's correct transitions towards the goals, which validates the effectiveness of our learned policy.
+            </p>
+          </div>
+          <div style="width: 33%">
+            <p id="Fig2" class="has-text-centered center" style="font-style: italic;"><img style="width: 70%" src="./static/images/multigoal.png"/><br>
+            <b>Figure 2.</b>The soft value function and the trajectories generated using our method on the multi-goal environment.</p>
+          </div>
+        </div>
+
+        <p>&#9654<b>Performance Comparison on the MuJoCo Environments:</b> </p>
+        <p id="Fig3" class="has-text-centered" style="font-style: italic;"><img src="./static/images/mujoco_main.png" style="width:100%;"/></br>
+          <b>Figure 3.</b> The results in terms of total returns versus the number of training steps evaluated on five MuJoCo environments. 
+          Each curve represents the mean performance, with shaded areas indicating the 95% confidence intervals, derived from five independent runs with different seeds.
+        </p>
+        <p>
+          As depicted in <a href="#Fig3" style="color: blue;">Fig. 3</a>, MEow performs comparably to SAC and outperforms the other baseline algorithms in most of the environments. 
+          Furthermore, in environments with larger action and state dimensionalities, such as `Ant-v4' and `Humanoid-v4', MEow offers performance improvements over SAC and exhibits fewer spikes in the evaluation curves. 
+          These results suggest that MEow is capable of performing high-dimensional tasks with stability. 
+          To further investigate the performance difference between MEow and SAC, we provide a performance examination using the simulation environments from the Omniverse Isaac Gym [<a href="#Isaac">5</a>] in the next subsection.
+        </p>
+
+        <p>&#9654<b>Performance Comparison on the Omniverse Issac Gym Environments [<a href="#Isaac">5</a>]:</b></p>
+        <div class="columns is-mobile is-centered">
+          <div style="width: 54%;">
+            <p id="Fig4" class="has-text-centered" style="font-style: italic;"><img src="./static/images/Isaac_main_curve.png"/><br>
+              <b>Figure 4.</b> A comparison on six Isaac Gym environments. 
+              Each curve represents the mean performance of five runs, with shaded areas indicating the 95% confidence intervals. 
+              `Steps' in the x-axis represents the number of training steps, each of which consists of $N$ parallelizable interactions with the environments.</p>
+          </div>
+          <div style="width:46%;">
+            <p id="Fig5" class="has-text-centered" style="font-style: italic;"><img src="./static/images/Isaac_main_fig.png"/><br>
+            <b>Figure 5.</b> A demonstration of the six Isaac Gym environments. 
+            The dimensionalities of the state and action for each environment are denoted below each subfigure.</p>
+          </div>
+        </div>
+        <p>
+          In this subsection, we examine the performance of MEow on a variety of robotic tasks simulated by Omniverse Isaac Gym [<a href="#Isaac">5</a>], a GPU-based physics simulation platform. 
+          In addition to `Ant' and `Humanoid', we employ four additional tasks: `Ingenuity', `ANYmal', `AllegroHand', and `FrankaCabinet'. 
+          All of them are designed based on real-world robotic application scenarios. 
+          `Ingenuity' and `ANYmal' are locomotion environments inspired by NASA’s Ingenuity helicopter and ANYbotics' industrial maintenance robots, respectively. 
+          On the other hand, `AllegroHand' and `FrankaCabinet' focus on executing specialized manipulative tasks with robotic hands and arms, respectively. 
+          A demonstration of these tasks is illustrated in <a href="#Fig5">Fig. 5</a>.
+        </p>
+        <p>
+          In this experimental comparison, we adopt SAC as a baseline due to its excellent performance in the MuJoCo environments. 
+          The evaluation results are presented in <a href="#Fig4">Fig. 4</a>.
+          The results demonstrate that MEow exhibits superior performance on `Ant (Isaac)' and `Humanoid (Isaac)'. 
+          In addition, MEow consistently outperforms SAC across the four robotic environments (i.e., `Ingenuity', `ANYmal', `AllegroHand', and `FrankaCabinet'), indicating that our algorithm possesses the ability to perform challenging robotic tasks simulated based on real-world application scenarios.
+        </p>
+
+        <p>&#9654<b>Ablation Analysis:</b></p>
+        <p id="Fig6" class="has-text-centered" style="font-style: italic;"><img src="./static/images/mujoco_ablation.png" style="width:100%;"/></br>
+          <b>Figure 6.</b> The performance comparison of MEow's variants (i.e., `MEow (Vanilla)', `MEow (+LRS)', and `MEow (+LRS \& SCDQ)') on five MuJoCo environments. 
+          Each curve represents the mean performance of five runs, with shaded areas indicating the 95% confidence intervals.
+        </p>
+        <p>
+          In this subsection, we provide an ablation analysis to examine the effectiveness of each training technique introduced in Methodology. 
+          <a href="#Fig6">Fig. 6</a> compares the performance of three variants of MEow: `MEow (Vanilla)', `MEow (+LRS)', and `MEow (+LRS & SCDQ)', across five MuJoCo environments. 
+          The results show that `MEow (Vanilla)' consistently underperforms, with its total returns demonstrating negligible or no growth throughout the training period. 
+          In contrast, the variants incorporating translation functions demonstrate significant performance enhancements. 
+          This observation highlights the importance of including $b_\theta$ in the model design. 
+          In addition, the comparison between `MEow (+LRS)' and `MEow (+LRS & SCDQ)' suggests that our reformulated approach to clipped double Q-learning improves the final performance by a noticeable margin. 
+          These findings thus validate the effectiveness of the proposed training techniques.
+        </p>
+      </div>
+    </div>
+</section>
+
+<section class="section">
+  <div class="container is-max-desktop">
+    <h2 class="title" style="text-indent: -0.35em;">Poster</h2>
+    <div class="columns is-centered has-text-centered">
+      <div class="content has-text-justified scroll-wrapper">
+        <p class="has-text-centered" style="font-style: italic;"><embed src="./static/images/NeurIPS24-poster.pdf" width="980pt" height="560pt"></p>
+      </div>
+    </div>
+</section>
+
+<section class="section" id="reference">
+  <div class="container is-max-desktop content">
+    <h2 class="title">References</h2>
+    <p id="SQL">[1] T. Haarnoja, H. Tang, P. Abbeel, and S. Levine. Reinforcement Learning
+      with Deep Energy-Based Policies. In Proceedings of the International Conference on Machine
+      Learning (ICML), 2017.</p>
+    <p id="SAC">[2] T. Haarnoja, A. Zhou, P. Abbeel, and S. Levine. Soft Actor-Critic: Off-Policy Maximum Entropy Deep Reinforcement Learning with a Stochastic Actor. In Proceedings of
+        the International Conference on Machine Learning (ICML), 2017.</p>
+    <p id="EBFlow">[3] C.-H. Chao, W.-F. Sun, Y.-C. Hsu, Z. Kira, and C.-Y. Lee. Training Energy-
+      Based Normalizing Flow with Score-Matching Objectives. In Proceedings of the International
+      Conference on Neural Information Processing Systems (NeurIPS), 2023.</p>
+    <p id="DoubleQ">[4] S. Fujimoto, H. v. Hoof, and D. Meger. Addressing Function Approximation Error
+      in Actor-Critic Methods. In Proceedings of the International Conference on Machine Learning
+      (ICML), 2018.</p>
+    <p id="Isaac">[5] V. Makoviychuk, L. Wawrzyniak, Y. Guo, M. Lu, K. Storey, M.
+      Macklin, D. Hoeller, N. Rudin, A. Allshire, A. Handa, and G. State. Isaac
+      Gym: High Performance GPU-Based Physics Simulation For Robot Learning. Proceedings of
+      the International Conference on Neural Information Processing Systems (NeurIPS) Dataset and
+      Benchmark Track, 2021.</p>
+  </div>
+</section>
+
+<section class="section" id="BibTeX">
+<div class="container is-max-desktop content">
+<h2 class="title">BibTeX</h2>
+<pre><code>@inproceedings{chao2024maximum,
+  title={Maximum Entropy Reinforcement Learning via Energy-Based Normalizing Flow},
+  author={Chao, Chen-Hao and Feng, Chien and Sun, Wei-Fang and Lee, Cheng-Kuang and See, Simon and Lee, Chun-Yi},
+  booktitle={Proceedings of International Conference on Neural Information Processing Systems (NeurIPS)}
+  year={2024}
+}
+</code></pre>
+</div>
+</section>
+
+
+<footer class="footer">
+  <div class="container">
+    <div class="columns is-centered">
+      <div class="column is-8">
+        <div class="content">
+          <p>
+            The template of this page is based on the
+            <a href="https://github.com/nerfies/nerfies.github.io">Nerfies</a> website.
+            You are free to borrow the <a href="https://github.com/chen-hao-chao/ebflow">code</a> of this website,
+            we just ask that you link back to this page in the footer.
+            Please remember to remove the analytics code included in the header of the website which
+            you do not want on your website.
+          </p>
+          <p>
+            This website is licensed under a <a rel="license"
+              href="http://creativecommons.org/licenses/by-sa/4.0/">Creative
+              Commons Attribution-ShareAlike 4.0 International License</a>.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
