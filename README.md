@@ -1,6 +1,7 @@
 # Maximum Entropy Reinforcement Learning via Energy-Based Normalizing Flow
 
-[![arXiv](https://img.shields.io/badge/arXiv-2305.15267-b31b1b.svg?style=flat-square)](https://arxiv.org/abs/2405.13629)<br>
+[![arXiv](https://img.shields.io/badge/arXiv-2305.15267-b31b1b.svg?style=flat-square)](https://arxiv.org/abs/2405.13629) [![YouTube](https://img.shields.io/badge/YouTube-ff0101?logo=youtube&style=flat-square)](https://youtu.be/71-VtIWEPFw)
+<br>
 
 This repository contains the code implementation of the experiments presented in the paper [*Maximum Entropy Reinforcement Learning via Energy-Based Normalizing Flow*](https://arxiv.org/abs/2405.13629).
 
@@ -31,13 +32,11 @@ Further changes based on the repository above are licensed under the [MIT Licens
 If you find this repository useful, please consider citing [our paper](https://arxiv.org/abs/2405.13629):
 
 ```bibtex
-@misc{chao2024maximum,
-      title={{Maximum Entropy Reinforcement Learning via Energy-Based Normalizing Flow}}, 
-      author={Chen-Hao Chao and Chien Feng and Wei-Fang Sun and Cheng-Kuang Lee and Simon See and Chun-Yi Lee},
-      year={2024},
-      eprint={2405.13629},
-      archivePrefix={arXiv},
-      primaryClass={cs.LG}
+@inproceedings{chao2024maximum,
+    title={Maximum Entropy Reinforcement Learning via Energy-Based Normalizing Flow},
+    author={Chao, Chen-Hao and Feng, Chien and Sun, Wei-Fang and Lee, Cheng-Kuang and See, Simon and Lee, Chun-Yi},
+    booktitle={Proceedings of the International Conference on Neural Information Processing Systems (NeurIPS)},
+    year={2024}
 }
 ```
 

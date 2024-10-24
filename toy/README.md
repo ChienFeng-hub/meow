@@ -63,13 +63,11 @@ This code implementation is developed based on the following repositories:
 If you find this repository useful, please consider citing [our paper](https://arxiv.org/abs/2405.13629):
 
 ```bibtex
-@misc{chao2024maximum,
-      title={{Maximum Entropy Reinforcement Learning via Energy-Based Normalizing Flow}}, 
-      author={Chen-Hao Chao and Chien Feng and Wei-Fang Sun and Cheng-Kuang Lee and Simon See and Chun-Yi Lee},
-      year={2024},
-      eprint={2405.13629},
-      archivePrefix={arXiv},
-      primaryClass={cs.LG}
+@inproceedings{chao2024maximum,
+    title={Maximum Entropy Reinforcement Learning via Energy-Based Normalizing Flow},
+    author={Chao, Chen-Hao and Feng, Chien and Sun, Wei-Fang and Lee, Cheng-Kuang and See, Simon and Lee, Chun-Yi},
+    booktitle={Proceedings of the International Conference on Neural Information Processing Systems (NeurIPS)},
+    year={2024}
 }
 ```
 
